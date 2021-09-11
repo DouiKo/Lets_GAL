@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/">
+        <file>i/close.png</file>
+        <file>i/max.png</file>
+        <file>i/mini.png</file>
+        <file>i/open.png</file>
+        <file>i/add.png</file>
+        <file>i/search.png</file>
+        <file>i/zip.png</file>
+        <file>i/floder.png</file>
+        <file>i/file.png</file>
+        <file>i/photo.png</file>
+        <file>i/savelibrary.png</file>
+        <file>i/setting.png</file>
+        <file>i/new.png</file>
+        <file>i/star.png</file>
+    </qresource>
+</RCC>
