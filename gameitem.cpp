@@ -17,6 +17,7 @@ void GameItem::setName(const QString &value)
 
 QString GameItem::getTime() const
 {
+    if(time.isEmpty())return "未启动";
     return time;
 }
 
@@ -55,16 +56,66 @@ QPixmap GameItem::getIcon() const
     return icon;
 }
 
-QString GameItem::getFilePath() const
+QString GameItem::getExePath() const
+{
+    return exePath;
+}
+
+void GameItem::setExePath(const QString &value)
+{
+    exePath = value;
+    QFileInfo fileInfo(exePath);
+    QFileIconProvider seekIcon;
+    QIcon image = seekIcon.icon(fileInfo);
+    icon = image.pixmap(QSize(32,32));
+}
+
+GameItem::State GameItem::getState() const
+{
+    return currentState;
+}
+
+void GameItem::setState(GameItem::State state)
+{
+    currentState = state;
+}
+
+double GameItem::getRunningTime() const
+{
+    return runningTime;
+}
+
+void GameItem::setRunningTime(double value)
+{
+    runningTime = value;
+}
+
+QString GameItem::getSaveDataPath() const
+{
+    return saveDataPath;
+}
+
+void GameItem::setSaveDataPath(const QString &value)
+{
+    saveDataPath = value;
+}
+
+QString GameItem::getFloderPath() const
 {
     return filePath;
 }
 
-void GameItem::setFilePath(const QString &value)
+void GameItem::setFloderPath(const QString &value)
 {
     filePath = value;
-    QFileInfo fileInfo(filePath);
-    QFileIconProvider seekIcon;
-    QIcon image = seekIcon.icon(fileInfo);
-    icon = image.pixmap(QSize(32,32));
+}
+
+QString GameItem::getId() const
+{
+    return id;
+}
+
+void GameItem::setId(const QString &value)
+{
+    id = value;
 }

@@ -45,11 +45,22 @@ private:
 
     void initGameData();
 
+    //数据库操作
+    void setStateToGameItem(GameItem &game, QString id);
+
+    void setTagsToGameItem(GameItem &game, QString id);
+
+    void setStorageToGameItem(GameItem &game, QString id);
+
+    void UpdataGameState(GameItem::State state,QString id);
+
     //游戏操作
     void startGameFromItem(GameItem item);
 
+
+
     //文件操作
-    bool openExeFromPath(QString path);
+    bool openExeFromPath(QString path, QString floderPath);
 
 private:
     QStandardItemModel *libraryModel;

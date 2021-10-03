@@ -6,6 +6,11 @@
 #include <QMouseEvent>
 #include <QProcess>
 #include <qdatetime.h>
+#include <QSqlQuery>
+#include <QSqlError>
+
+extern QSqlQuery writeQuery;
+extern QSqlQuery readQuery;
 
 MainScn::MainScn(QWidget *parent)
     : QWidget(parent)
@@ -81,19 +86,80 @@ void MainScn::initListViewLibrary()
     //connect(ui->listViewLibrary,&QListView::mousePressPos,this,&Widget::onMousePressPos);
 }
 
+void MainScn::setStateToGameItem(GameItem &game,QString id){
+    writeQuery.prepare("select * from gamestate where gameid = :gameid");
+    writeQuery.bindValue(":gameid",id);
+    writeQuery.exec();
+    if(writeQuery.next()){
+        game.setTime(writeQuery.value(1).toString());
+        game.setState(GameItem::State(readQuery.value(2).toUInt()));
+    }
+}
+
+void MainScn::setTagsToGameItem(GameItem &game,QString id){
+    writeQuery.prepare("select * from tag where gameid = :gameid");
+    writeQuery.bindValue(":gameid",id);
+    writeQuery.exec();
+    while (writeQuery.next()) {
+        game.insertTagToList(writeQuery.value(1).toString());
+    }
+}
+
+void MainScn::setStorageToGameItem(GameItem &game,QString id){
+    writeQuery.prepare("select * from storage where gameid = :gameid");
+    writeQuery.bindValue(":gameid",id);
+    writeQuery.exec();
+    if(writeQuery.next()){
+        QString exePath = writeQuery.value(1).toString();
+        QString filePath = writeQuery.value(2).toString();
+        QString savePath = writeQuery.value(3).toString();
+        game.setExePath(exePath);
+        game.setSaveDataPath(savePath);
+        game.setFloderPath(filePath);
+    }
+}
+
+void MainScn::UpdataGameState(GameItem::State state, QString id)
+{
+    int counts = 0;
+    readQuery.prepare("select runningcounts from gamestate where gameid = :gameid");
+    readQuery.bindValue(":gameid",id);
+    readQuery.exec();
+    if(readQuery.next()){
+        counts = readQuery.value(0).toUInt() + 1;
+        writeQuery.prepare("update gamestate set time = :time,state = :state,runningcounts = :counts where gameid = :gameid");
+        writeQuery.bindValue(":gameid",id);
+        writeQuery.bindValue(":time",QDateTime::currentDateTime().toString("MM/dd hh:mm"));
+        writeQuery.bindValue(":state",state);
+        writeQuery.bindValue(":counts",counts);
+        if(!writeQuery.exec()){
+            qDebug()<<id + " could not updated state:" << writeQuery.lastError();
+        }else{
+            qDebug()<<id + " updated success:"  << writeQuery.lastError();
+        }
+    }else{
+        qDebug()<<id + " could not found game:" << readQuery.lastError();
+    }
+}
+
 void MainScn::initGameData()
 {
     libraryModel = new QStandardItemModel(this);
 
-    for (int i = 0; i < 500; ++i) {
+    readQuery.prepare("select * from game");
+    readQuery.exec();
+    while (readQuery.next()) {
         QStandardItem *item = new QStandardItem();
         GameItem game;
-        game.setName("千恋万花" + QString::number(i));
-        game.setTime("09/05 22:26");
-        game.insertTagToList("纯爱");
-        game.insertTagToList("日常");
-        game.insertTagToList("柚子");
-        game.setFilePath("C:/Users/29856/AppData/Local/Programs/aDrive/aDrive.exe");
+        QString id = readQuery.value(0).toString();
+        QString name = readQuery.value(1).toString();
+        game.setId(id);
+        game.setName(name);
+
+        setStorageToGameItem(game,id);
+        setTagsToGameItem(game,id);
+        setStateToGameItem(game,id);
+
         QVariant variant = QVariant::fromValue(game);
         item->setData(variant,Qt::UserRole+1);
         libraryModel->appendRow(item);
@@ -107,22 +173,27 @@ void MainScn::initGameData()
 //step3.更新数据库游戏最后启动时间
 void MainScn::startGameFromItem(GameItem item)
 {
-    qDebug()<<item.getName()<<item.getFilePath();
+//    qDebug()<<item.getName()<<item.getExePath();
     this->showMinimized();
     //step1
-    if(openExeFromPath(item.getFilePath())){
+    if(openExeFromPath(item.getExePath(),item.getFloderPath())){
+        qDebug()<<QDateTime::currentDateTime().toString("yyyy/MM/dd hh:mm:ss") + item.getName() + " success!";
+        UpdataGameState(GameItem::State::Running,item.getId());
         //step2
     }else{
         //error
-        qDebug()<<QDateTime::currentDateTime().toString("yyyy/MM/dd hh:mm:ss") + item.getName() + "启动失败";
+        qDebug()<<QDateTime::currentDateTime().toString("yyyy/MM/dd hh:mm:ss") + item.getName() + " failed!";
     }
 }
 
-bool MainScn::openExeFromPath(QString path)
+bool MainScn::openExeFromPath(QString exePath,QString floderPath)
 {
-    if(!path.isEmpty()){
+    if(!exePath.isEmpty()){
         QProcess process;
-        process.startDetached(path);
+        qint64 *processid = new qint64;
+        process.startDetached(exePath,QStringList(),floderPath,processid);
+        qDebug()<<*processid;
+        qDebug()<<process.exitStatus();
         return process.error() == QProcess::UnknownError ? true  :  false;
     }
     return false;
